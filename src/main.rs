@@ -1,4 +1,5 @@
 use endfield_gacha_calculator_lib::{EndFiledGacheCalculator, EndFiledGacheCalculatorOption};
+use std::io::Write;
 use num_rational::BigRational;
 use clap::Parser;
 use indicatif::{ProgressBar, ProgressStyle};
@@ -7,6 +8,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 #[command(
     version,
     about = "终末地抽卡计算器",
+    arg_required_else_help = true,
 )]
 struct Args {
     /// 当前已抽次数
@@ -79,12 +81,17 @@ fn main() {
         if no_bonus_at_each_240 { "_without-240" } else { Default::default() },
         if rational { "_rational" } else { Default::default() },
     );
-    let file = std::fs::File::options()
+    let mut file = match std::fs::File::options()
         .write(true)
         .create(true)
         .truncate(true)
         .open(&path)
-        .unwrap();
+    {
+        Ok(x) => x,
+        Err(e) => panic!("打开文件出错：{}", e),
+    };
+    file.write_all(b"\xEF\xBB\xBF").unwrap();
+
     let mut wtr = csv::Writer::from_writer(file);
     let option = EndFiledGacheCalculatorOption::default()
         .with_curren_count(count)
